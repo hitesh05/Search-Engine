@@ -1,6 +1,7 @@
 import sys
 from collections import defaultdict
 import timeit
+import time
 import re
 import os
 import xml.sax
@@ -16,6 +17,11 @@ stemmer = SnowballStemmer(language="english")
 
 pagecount = 0
 index = defaultdict(list)
+max_tokens = 15000
+filecount = 0
+
+## NOTES ##
+# check about title_arr
 
 
 class IndexBnaLe():
@@ -36,6 +42,9 @@ class IndexBnaLe():
 
     def indexer(this):
         global pagecount
+        global max_tokens
+        global index
+        global filecount
 
         num = pagecount
         words = set()
@@ -81,6 +90,32 @@ class IndexBnaLe():
                 s += "r" + str(ref)
                 
             index[i].append(s)
+            
+        pagecount +=1
+        # print(index)
+        # print(sorted(index.keys()))
+        if pagecount % max_tokens == 0:
+            print(pagecount)
+            printFile()
+            
+def printFile():
+    global index
+    global filecount
+    
+    name = 'data2/' + 'index' + str(filecount) + '.txt'
+    file = open(name, 'w')
+    
+    for word in (sorted(index.keys())):
+        s = word + ':'
+        posting = index[word]
+        s += ' '.join(posting)
+        file.write(s + '\n')
+    file.close()
+    
+    index = defaultdict(list)
+    print('created file', filecount)
+    filecount+=1
+        
 
 
 class PtaNiBhai():
@@ -125,7 +160,7 @@ class PtaNiBhai():
             refarr.append(i.replace("title", " ", 1))
 
         data = this.tokenise(" ".join(refarr))
-        print(data)
+        # print(data)
         return data
 
     def linksChahiye(this, text):  # should http be removed?
@@ -250,4 +285,10 @@ class Parser():
 
 
 if __name__ == "__main__":
+    st = time.time()
     parser = Parser(sys.argv[1])
+    printFile()
+    
+    et = time.time()
+    total = et - st
+    print('Execution time:', total, 'seconds')
