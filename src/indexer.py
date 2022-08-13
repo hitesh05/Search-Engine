@@ -1,37 +1,63 @@
 import sys
 from collections import defaultdict
-import timeit
 import time
 import re
-import os
 import xml.sax
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem.porter import *
-from nltk.stem.snowball import SnowballStemmer
-from tqdm import tqdm
+from Stemmer import Stemmer
+import os
 
 nltk.download("stopwords")
 stop_words = set(stopwords.words("english"))
-stemmer = SnowballStemmer(language="english")
+# stemmer = SnowballStemmer(language="english")
+stemmer = Stemmer('porter')
 
 pagecount = 0
 index = defaultdict(list)
 max_tokens = 15000
+max_docs = 15000
 filecount = 0
+
+try:
+    os.mkdir('data2')
+except:
+    pass
+
+directory = '/data2/'
 
 ## NOTES ##
 # check about title_arr
+# check out PyStemmer
 
 
-class IndexBnaLe():
+class IndexBnaLe:
     def __init__(this, t, b, i, c, l, r):
-        this.r = r
-        this.l = l
-        this.c = c
-        this.i = i
-        this.b = b
-        this.t = t
+        this.__r = r
+        this.__l = l
+        this.__c = c
+        this.__i = i
+        this.__b = b
+        this.__t = t
+        
+    def get_ref(this):
+        return this.__r
+    
+    def get_links(this):
+        return this.__l
+    
+    def get_cat(this):
+        return this.__c
+    
+    def get_info(this):
+        return this.__i
+    
+    def get_body(this):
+        return this.__b
+    
+    def get_title(this):
+        return this.__t
 
     def create_dict(this, x):
         d = defaultdict(int)
@@ -49,23 +75,23 @@ class IndexBnaLe():
         num = pagecount
         words = set()
 
-        title = this.create_dict(this.t)
-        words.update(this.t)
+        title = this.create_dict(this.get_title())
+        words.update(this.get_title())
 
-        body = this.create_dict(this.b)
-        words.update(this.b)
+        body = this.create_dict(this.get_body())
+        words.update(this.get_body())
 
-        info = this.create_dict(this.i)
-        words.update(this.i)
+        info = this.create_dict(this.get_info())
+        words.update(this.get_info())
 
-        categories = this.create_dict(this.c)
-        words.update(this.c)
+        categories = this.create_dict(this.get_cat())
+        words.update(this.get_cat())
 
-        links = this.create_dict(this.l)
-        words.update(this.l)
+        links = this.create_dict(this.get_links())
+        words.update(this.get_links())
 
-        references = this.create_dict(this.r)
-        words.update(this.r)
+        references = this.create_dict(this.get_ref())
+        words.update(this.get_ref())
 
         for i in words:
             s = "d" + str(num)
@@ -88,34 +114,34 @@ class IndexBnaLe():
             ref = references[i]
             if ref:
                 s += "r" + str(ref)
-                
+
             index[i].append(s)
-            
-        pagecount +=1
+
+        pagecount += 1
         # print(index)
         # print(sorted(index.keys()))
-        if pagecount % max_tokens == 0:
+        if pagecount % max_docs == 0:
             print(pagecount)
             printFile()
-            
+
+
 def printFile():
     global index
     global filecount
-    
-    name = 'data2/' + 'index' + str(filecount) + '.txt'
-    file = open(name, 'w')
-    
-    for word in (sorted(index.keys())):
-        s = word + ':'
+
+    name = ".." + directory + "index" + str(filecount) + ".txt"
+    file = open(name, "w")
+
+    for word in sorted(index.keys()):
+        s = word + ":"
         posting = index[word]
-        s += ' '.join(posting)
-        file.write(s + '\n')
+        s += " ".join(posting)
+        file.write(s + "\n")
     file.close()
-    
+
     index = defaultdict(list)
-    print('created file', filecount)
-    filecount+=1
-        
+    print("created file", filecount)
+    filecount += 1
 
 
 class PtaNiBhai():
@@ -123,10 +149,12 @@ class PtaNiBhai():
         pass
 
     def tokenise(this, data):  # working
+        data = re.sub(r'&nbsp;|&lt;|&gt;|&amp;|&quot;|&apos;', r' ', data) # removing html entities
+        data = re.sub(r'http\S*\s', r' ', data) # removing urls
         toks = re.split(r"[^A-Za-z0-9]+", data)
         finaal = list()
         for i in toks:
-            word = stemmer.stem(i)
+            word = stemmer.stemWord(i)
             if (
                 len(word) <= 1 or len(word) > 45 or word in stop_words
             ):  # check for word length
@@ -143,13 +171,14 @@ class PtaNiBhai():
 
     def categoriesChahiye(this, text):  # working
         cat = list()
-        data = text.split("\n")
+        # data = text.split("\n")
 
-        for i in data:
-            if re.match(r"\[\[category:(.*)\]\]", i):
-                # cat.append(i)
-                cat.append(re.sub(r"\[\[category:(.*)\]\]", r"\1", i))
+        # for i in data:
+        #     if re.match(r"\[\[category:(.*)\]\]", i):
+        #         # cat.append(i)
+        #         cat.append(re.sub(r"\[\[category:(.*)\]\]", r"\1", i))
 
+        cat = re.findall(r"\[\[category:(.*)\]\]",text)
         data = this.tokenise(" ".join(cat))
         return data
 
@@ -164,7 +193,7 @@ class PtaNiBhai():
         return data
 
     def linksChahiye(this, text):  # should http be removed?
-        data = re.split("\n", text)
+        data = text.split('\n')
         links = list()
 
         for i in data:
@@ -175,7 +204,8 @@ class PtaNiBhai():
         return data
 
     def infoboxChahiye(this, text):  # working
-        check = re.split(r"\{\{infobox", text)
+        # check = re.split(r"\{\{infobox", text)
+        check = text.split("{{infobox")
         x = len(check)
         info = list()
 
@@ -220,10 +250,12 @@ class PtaNiBhai():
                 links = list()
                 link_hai = False
             if link_hai == True:
-                links = this.linksChahiye(data2[1])
-
-            references = this.referencesChahiye(data[1])
-            categories = this.categoriesChahiye(data[1])
+                x = data2[1]
+                links = this.linksChahiye(x)
+            
+            x = data[1]
+            references = this.referencesChahiye(x)
+            categories = this.categoriesChahiye(x)
         else:
             link_hai = True
             categories = this.categoriesChahiye(data[0])
@@ -235,8 +267,9 @@ class PtaNiBhai():
             if link_hai == True:
                 links = this.linksChahiye(data2[1])
 
-        infobox = this.infoboxChahiye(data[0])
-        body = this.bodyChahiye(data[0])
+        x = data[0]
+        infobox = this.infoboxChahiye(x)
+        body = this.bodyChahiye(x)
 
         return title, body, references, categories, links, infobox
 
@@ -252,19 +285,21 @@ class Document_Handler(xml.sax.ContentHandler):
     # call when an element starts
     def startElement(this, tag, attributes):
         this.abhi = tag
+        
+    def index(this, t,b,i,c,l,r):
+        ind = IndexBnaLe(t,b,i,c,l,r)
+        ind.indexer()
+        this.abhi = ""
+        this.title = ""
+        this.text = ""
+        
 
     # Call when an elements ends
     def endElement(this, tag):
         if tag == "page":
             d = PtaNiBhai()
-            title, body, info, categories, links, references = d.processContent(
-                this.text, this.title
-            )
-            ind = IndexBnaLe(title, body, info, categories, links, references)
-            ind.indexer()
-            this.abhi = ""
-            this.title = ""
-            this.text = ""
+            title, body, info, categories, links, references = d.processContent(this.text, this.title)
+            this.index(title, body, info, categories, links, references)
 
     def characters(this, content):
         if this.abhi == "title":
@@ -273,22 +308,20 @@ class Document_Handler(xml.sax.ContentHandler):
             this.text += content
 
 
-class Parser():
-    def __init__(this, file):
-        this.parser = xml.sax.make_parser()  # create an XMLReader
-        this.parser.setFeature(
-            xml.sax.handler.feature_namespaces, 0
-        )  # turn off namepsaces
-        Handler = Document_Handler()  # making a custom handler
-        this.parser.setContentHandler(Handler)
-        this.parser.parse(file)  # parse the file
+        
+def Parser(file):
+    parser = xml.sax.make_parser() # create an XMLReader
+    parser.setFeature(xml.sax.handler.feature_namespaces, 0)  # turn off namepsaces
+    handler = Document_Handler()  # making a custom handler
+    parser.setContentHandler(handler)
+    parser.parse(file)
 
 
 if __name__ == "__main__":
     st = time.time()
     parser = Parser(sys.argv[1])
     printFile()
-    
+
     et = time.time()
     total = et - st
-    print('Execution time:', total, 'seconds')
+    print("Execution time:", total, "seconds")
