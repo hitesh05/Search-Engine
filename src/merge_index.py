@@ -34,9 +34,6 @@ class Merger():
         fname = open(self.filename, 'w')
         while any(self.flag) == 1:
             x = heapq.heappop(self.heap)
-            total += 1
-            if total == 100000:
-                total = 0
             s = ''
             for i in range(0, self.num_files):
                 if self.flag[i] and self.words[i][0] == x:
@@ -64,8 +61,12 @@ class Merger():
 # dirname = sys.argv[1]
 if __name__ == '__main__':
     st = time.time()
+    try:
+        os.mkdir("../complete")
+    except:
+        pass
     dirname = "../data3" 
-    filename = 'final.txt'
+    filename = '../complete/final.txt'
     # num_files = 2
     num_files =  (len([name for name in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, name))]))
     m = Merger(num_files, filename, dirname)
