@@ -1,15 +1,15 @@
 import sys
 import re
 from tqdm import tqdm_notebook as tqdm
-import math
+from math import log2
 from bisect import bisect
 from collections import defaultdict
 import time
-import random
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem.porter import *
 from Stemmer import Stemmer
+import random
 
 dirname = "../complete/"
 sec_file = open(dirname  + "sec.txt",'r')
@@ -24,6 +24,8 @@ nltk.download('stopwords')
 #     pass
 stop_words = set(stopwords.words('english'))
 stemmer = Stemmer('porter')
+
+doccount = 480000 # CHANGE FOR FINAL DATA# 
 
 
 class Extra():
@@ -45,16 +47,6 @@ class Extra():
             finaal.append(word)
 
         return finaal
-    
-    def get_title(self, doc_num):
-        global max_docs
-        global titledir
-        
-        off = doc_num // max_docs
-        off += 1
-        f = open(titledir + str(off) + '.txt','r')
-        title = f.readlines()[doc_num % max_docs].strip()
-        return title
 
     def get_postinglist(self, token):
         tok2 = token + '\n'
@@ -74,20 +66,170 @@ class Extra():
         
         return False
 
-def init_search(line):
-    # print("Starting search engine\n")
-    cl = Extra()
-    if re.match(r'[t|b|i|c|l|r]:', line):
-        pass
-    else:
+class Search():
+    
+    def __init__(self):
+        self.fieldtype = ['t', 'b', 'r', 'c', 'l', 'i']
+        self.intlist = ['0','1','2','3','4','5','6','7','8','9']
+        self.results = 10
+        self.strtoprint = list()
+        self.fieldmap = {'t':0, 'b':1, 'r':2, 'c':3, 'l':4, 'i':5}
+        
+    def get_title(self, doc_num):
+        global max_docs
+        global titledir
+        
+        off = doc_num // max_docs
+        # off += 1
+        f = open(titledir + str(off) + '.txt','r')
+        title = f.readlines()[doc_num % max_docs].strip()
+        return title
+        
+    def getnum(self, doc):
+        # print(doc)
+        l = list()
+        for i in range(len(self.fieldtype)):
+            x = doc.find(self.fieldtype[i])
+            # print(x)
+            if x>0:
+                l.append(int(doc[x+1]))
+            else:
+                l.append(0)
+                
+        return l
+    
+    # CHANGE #
+    def scorer(self, scores):
+        s = [500, 10, 8,8,8,28]
+        
+        for i in range(len(scores)):
+            scores[i] *= s[i]
+        
+        return scores
+    
+    def query_search(self, line):
+        global doccount
+        cl = Extra()
+        
+        parsed = defaultdict(int)
+        score = defaultdict(int)
+        inpstr = line
+        prsd =[]
+        lis = inpstr.split(":")
+        first = 0
+        for kr in range(len(lis)):
+            if not first:
+                first = 1 
+            else :
+                spltlst = lis[kr-1].split()
+                contlst = lis[kr].split()
+                category = spltlst[len(spltlst)-1]
+                content = cl.tokenise(' '.join(contlst))
+                prsd.append((category,content))
+        x = len(prsd)
+        for i in range (x):
+            y = prsd[i][1]
+            for tok in y:
+                parsed[tok]=prsd[i][0]
+        # print (parsed)
+        # quit()
+        
+        for token in parsed.keys():
+            posting_list = cl.get_postinglist(token)
+            if posting_list:
+                token_count = defaultdict(int)
+                # doclist = posting_list.split('d')[1:]
+                doclist = re.split('d', posting_list)[1:]
+                # print(doclist, end='\n\n')
+                idf = log2(doccount/len(doclist))
+                for doc in doclist:
+                    pageid=''
+                    for i in doc:
+                        if i not in self.intlist:
+                            break
+                        else :
+                            pageid+=i
+                    pageid=int(pageid)
+                    # print(pageid)
+                    scores = self.getnum(doc)
+                    scores = self.scorer(scores)
+                    scores[self.fieldmap[parsed[tok]]]*=15000
+                    for s in scores:
+                        token_count[pageid] += s
+                    score[pageid] += log2(token_count[pageid]) * idf
+        
+        final = sorted(score.items(), key=lambda x: x[1], reverse = True)
+        # lenfin=len(final)
+        
+        for i in range(0, min(self.results, len(final))):
+            self.strtoprint.append(str(final[i][0]) + ',' + self.get_title(final[i][0]) + '\n')
+            
+        if self.results > len(final):
+            for x in range (self.results-len(final)):
+                randpage = random.randint(0,doccount)
+                self.strtoprint.append(str(randpage) + ',' + self.get_title(randpage) + '\n')
+                
+        return self.strtoprint 
+    
+    def simple_search(self,line):
+        global doccount
+        cl = Extra()
         tokens = cl.tokenise(line)
         # print(tokens)
+        score = defaultdict(int)
         for token in tokens:
             # print(token, end= '\n')
             posting_list = cl.get_postinglist(token)
             # print(posting_list, end = '\n\n')
             if posting_list:
-                pass
+                token_count = defaultdict(int)
+                # doclist = posting_list.split('d')[1:]
+                doclist = re.split('d', posting_list)[1:]
+                # print(doclist, end='\n\n')
+                idf = log2(doccount/len(doclist))
+                # print(idf)
+                for doc in doclist:
+                    pageid=''
+                    for i in doc:
+                        if i not in self.intlist:
+                            break
+                        else :
+                            pageid+=i
+                    pageid=int(pageid)
+                    # print(pageid)
+                    scores = self.getnum(doc)
+                    scores = self.scorer(scores)
+                    for s in scores:
+                        token_count[pageid] += s
+                    score[pageid] += log2(token_count[pageid]) * idf
+                    # print(score[pageid])
+                    
+        final = sorted(score.items(), key=lambda x: x[1], reverse = True)
+        # lenfin=len(final)
+        # print(final)
+        
+        for i in range(0, min(self.results, len(final))):
+            self.strtoprint.append(str(final[i][0]) + ',' + self.get_title(final[i][0]) + '\n')
+            
+        if self.results > len(final):
+            for jl in range (self.results-len(final)):
+                randpage = random.randint(0,9829058)
+                self.strtoprint.append(str(randpage) + ',' + self.get_title(randpage) + '\n')
+                
+        return self.strtoprint
+                    
+                
+    
+    def init_search(self, line):
+        # print("Starting search engine\n")
+        strtoprint = list()
+        if re.match(r'[t|b|i|c|l|r]:', line):
+            print('here')
+            strtoprint = self.query_search(line)
+        else:
+            strtoprint = self.simple_search(line)
+            
+        return strtoprint
         
     
 if __name__ == '__main__':
@@ -95,8 +237,18 @@ if __name__ == '__main__':
     query_file = open(query_filename,'r')
     lines = query_file.readlines()
     query_file.close()
+    search = Search()
     
+    strtoprint = list()
     for line in lines:
-        init_search(line)
-        break
+        st = time.time()
+        strtoprint = search.init_search(line)
+        et = time.time()
+        # ky=int(line.split(',')[0])
+        strtoprint.append(str(et-st)+'\n\n')
+        # break
     
+    op = sys.argv[2]
+    opfile = open(op,'a')
+    opfile.writelines(strtoprint)
+    opfile.close()

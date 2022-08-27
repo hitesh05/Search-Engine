@@ -71,6 +71,7 @@ if __name__ == '__main__':
     num_files =  (len([name for name in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, name))]))
     m = Merger(num_files, filename, dirname)
     m.merge()
+    # os.rmdir(dirname)
     et = time.time()
     t = et - st
     print('Execution time:', t, 'seconds')

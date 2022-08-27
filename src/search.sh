@@ -1,1 +1,1 @@
-python3 search.py ../queries.txt
+python3 search.py ../queries.txt ../queries2.txt

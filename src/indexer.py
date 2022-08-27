@@ -311,7 +311,7 @@ class Document_Handler(xml.sax.ContentHandler):
         global titlearr
         if tag == 'page':
             self.title = self.title.strip()
-            titlearr.append(self.title+'\n')
+            titlearr.append(self.title + '\n')
             d = PtaNiBhai()
             title, body, info, categories, links, references = d.processContent(self.text, self.title)
             self.index(title, body, info, categories, links, references)

@@ -11,14 +11,14 @@ def split(dirname):
     name = dirname + "/sec.txt"
     secondary = open(name, 'w')
     
-    line = filename.readline().strip()
+    line = filename.readline().strip('\n')
     
     while(line):
         char = ':'
         words = line.split(char)
         word = words[0]
         
-        if not(len(word)> 8 and word[0:7].isdecimal()):
+        if not(len(word)> 10 and word[0:7].isdecimal()):
             lines.append(line)
         if len(lines) == threshold:
             main_word = lines[0].split(char)[0]
@@ -31,7 +31,7 @@ def split(dirname):
             lines = list()
         line = filename.readline().strip()
         
-    if(len(lines)):
+    if(len(lines)>0):
         main_word = lines[0].split(char)[0]
         secondary.write(str(main_word)+'\n')
         
