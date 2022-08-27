@@ -2,6 +2,7 @@ import sys
 from collections import defaultdict
 import time
 import re
+from turtle import title
 import xml.sax
 import nltk
 from nltk.corpus import stopwords
@@ -23,6 +24,9 @@ max_docs = 15000
 filecount = 0
 tokens_encountered = 0
 tokens_in_index = 0
+
+titlearr = list()
+titledir = "../titles/"
 
 # try:
 #     os.mkdir('data2')
@@ -133,6 +137,7 @@ class IndexBnaLe:
 def printFile():
     global index
     global filecount
+    global titlearr
 
     name = directory + 'index' + str(filecount) + '.txt'
     file = open(name, 'w')
@@ -145,6 +150,13 @@ def printFile():
     file.close()
 
     index = defaultdict(list)
+    
+    # writing title array
+    titlefile = open(titledir + str(filecount) + '.txt','w')
+    titlefile.writelines(titlearr)
+    titlefile.close()
+    titlearr = list()
+    
     print('created file', filecount)
     filecount += 1
 
@@ -296,7 +308,10 @@ class Document_Handler(xml.sax.ContentHandler):
     # Call when an elements ends
     def endElement(self, tag):
         global pagecount
+        global titlearr
         if tag == 'page':
+            self.title = self.title.strip()
+            titlearr.append(self.title+'\n')
             d = PtaNiBhai()
             title, body, info, categories, links, references = d.processContent(self.text, self.title)
             self.index(title, body, info, categories, links, references)

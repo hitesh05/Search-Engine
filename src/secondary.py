@@ -1,6 +1,7 @@
 import os
 import time
 
+
 def split(dirname):
     lines = list()
     filecount = 0
@@ -22,7 +23,6 @@ def split(dirname):
         if len(lines) == threshold:
             main_word = lines[0].split(char)[0]
             secondary.write(str(main_word)+'\n')
-            
             name = dirname + '/f' + str(filecount) + '.txt'
             sec = open(name,'w')
             for line in lines:
