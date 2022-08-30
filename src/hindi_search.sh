@@ -1,0 +1,1 @@
+python3 hindi_search.py ../queries_hindi.txt ../queries2_hindi.txt

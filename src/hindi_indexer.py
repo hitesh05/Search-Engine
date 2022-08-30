@@ -10,23 +10,28 @@ from nltk.stem.porter import *
 from Stemmer import Stemmer
 import os
 
-# try:
-nltk.download('stopwords')
-# except:
-#     pass
-stop_words = set(stopwords.words('english'))
-stemmer = Stemmer('porter')
+## GLOBAL ##
+stop_words = list()
+stem_words = list()
+with open('hindi_stemwords.txt', 'r') as f:
+	stem_words = [word.strip() for word in f]
+
+with open('hindi_stopwords.txt', 'r') as f:
+    stop_words = [word.strip() for word in f]
+    
+stem_words = set(stem_words)
+stop_words = set(stop_words)
 
 pagecount = 0
 index = defaultdict(list)
 max_tokens = 15000
-max_docs = 15000
+max_docs = 1000
 filecount = 0
 tokens_encountered = 0
 tokens_in_index = 0
 
 titlearr = list()
-titledir = "../titles/"
+titledir = "../titles_hindi/"
 
 # try:
 #     os.mkdir('data2')
@@ -164,16 +169,27 @@ def printFile():
 class PtaNiBhai():
     def __init__(self):
         pass
+    
+    def stem(self, word):
+        for w in stem_words:
+            if word.endswith(w):
+                word = word[:-len(w)]
+                return word
+            
+        return word
 
     def tokenise(self, data):  # working
         global tokens_encountered
         data = re.sub(r'&nbsp;|&lt;|&gt;|&amp;|&quot;|&apos;', r' ', data) # removing html entities
         data = re.sub(r'http[s]?\S*[\s | \n]', r' ', data) # removing urls
-        toks = re.split(r'[^A-Za-z0-9]+', data)
+        data = re.sub(r'\{.*?\}|\[.*?\]|\=\=.*?\=\=', ' ', data)
+        data = ''.join(ch if ch.isalnum() else ' ' for ch in data)
+        toks = data.split()
         finaal = list()
         for i in toks:
             tokens_encountered+=1
-            word = stemmer.stemWord(i)
+            word = self.stem(i)
+            word = i
             if (
                 len(word) <= 1 or len(word) > 45 or word in stop_words
             ):  # check for word length
@@ -309,9 +325,10 @@ class Document_Handler(xml.sax.ContentHandler):
     def endElement(self, tag):
         global pagecount
         global titlearr
+        
         if tag == 'page':
             self.title = self.title.strip()
-            titlearr.append(self.title + '\n')
+            titlearr.append(self.title + '\n')  
             d = PtaNiBhai()
             title, body, info, categories, links, references = d.processContent(self.text, self.title)
             self.index(title, body, info, categories, links, references)
@@ -348,8 +365,10 @@ if __name__ == '__main__':
     et = time.time()
     total = et - st
     print('Execution time:', total, 'seconds')
-
+    
+    
 # 3 arguments to run
 # 1st: path to data
 # 2nd: path to dir to store index
 # 3rd: file to store stats
+# python hindi_indexer.py ../../hindi_data/data ../data_hin stats_hin.txt

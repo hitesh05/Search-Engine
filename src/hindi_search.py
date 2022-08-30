@@ -11,35 +11,52 @@ from nltk.stem.porter import *
 from Stemmer import Stemmer
 import random
 
-dirname = "../complete/"
+## GLOBAL ##
+
+dirname = "../complete_hin/"
 sec_file = open(dirname  + "sec.txt",'r')
 secwords = sec_file.readlines()
 sec_file.close()
 
-max_docs = 15000
-titledir = "../titles/"
-# try:
-nltk.download('stopwords')
-# except:
-#     pass
-stop_words = set(stopwords.words('english'))
-stemmer = Stemmer('porter')
+max_docs = 1000
+titledir = "../titles_hindi/"
 
-doccount = 480000 # CHANGE FOR FINAL DATA # 
+stop_words = list()
+stem_words = list()
+with open('hindi_stemwords.txt', 'r') as f:
+	stem_words = [word.strip() for word in f]
+
+with open('hindi_stopwords.txt', 'r') as f:
+    stop_words = [word.strip() for word in f]
+    
+stem_words = set(stem_words)
+stop_words = set(stop_words)
+
+doccount = 12000 # CHANGE FOR FINAL DATA # 
 
 
 class Extra():
     def __init__(self):
         pass
     
+    def stem(self, word):
+        for w in stem_words:
+            if word.endswith(w):
+                word = word[:-len(w)]
+                return word
+            
+        return word
+
     def tokenise(self, data):  # working
-        data = data.lower()
         data = re.sub(r'&nbsp;|&lt;|&gt;|&amp;|&quot;|&apos;', r' ', data) # removing html entities
         data = re.sub(r'http[s]?\S*[\s | \n]', r' ', data) # removing urls
-        toks = re.split(r'[^A-Za-z0-9]+', data)
+        data = re.sub(r'\{.*?\}|\[.*?\]|\=\=.*?\=\=', ' ', data)
+        data = ''.join(ch if ch.isalnum() else ' ' for ch in data)
+        toks = data.split()
         finaal = list()
         for i in toks:
-            word = stemmer.stemWord(i)
+            word = self.stem(i)
+            word = i
             if (
                 len(word) <= 1 or len(word) > 45 or word in stop_words
             ):  # check for word length
@@ -110,7 +127,7 @@ class Search():
     
     # CHANGE #
     def scorer(self, scores):
-        s = [2000, 10, 8, 8, 8, 28]
+        s = [200, 10, 8, 8, 8, 28]
         
         for i in range(len(scores)):
             scores[i] *= s[i]
@@ -174,10 +191,10 @@ class Search():
         for i in range(0, min(self.results, len(final))):
             self.strtoprint.append(str(final[i][0]) + ',' + self.get_title(final[i][0]) + '\n')
             
-        if self.results > len(final):
-            for x in range (self.results-len(final)):
-                randpage = random.randint(0,doccount)
-                self.strtoprint.append(str(randpage) + ',' + self.get_title(randpage) + '\n')
+        # if self.results > len(final):
+        #     for x in range (self.results-len(final)):
+        #         randpage = random.randint(0,doccount)
+        #         self.strtoprint.append(str(randpage) + ',' + self.get_title(randpage) + '\n')
                 
         return self.strtoprint 
     
@@ -221,10 +238,10 @@ class Search():
         for i in range(0, min(self.results, len(final))):
             self.strtoprint.append(str(final[i][0]) + ',' + self.get_title(final[i][0]) + '\n')
             
-        if self.results > len(final):
-            for jl in range (self.results-len(final)):
-                randpage = random.randint(0,9829058)
-                self.strtoprint.append(str(randpage) + ',' + self.get_title(randpage) + '\n')
+        # if self.results > len(final):
+        #     for jl in range (self.results-len(final)):
+        #         randpage = random.randint(0,10)
+        #         self.strtoprint.append(str(randpage) + ',' + self.get_title(randpage) + '\n')
                 
         return self.strtoprint
                     
@@ -262,3 +279,6 @@ if __name__ == '__main__':
     opfile = open(op,'a')
     opfile.writelines(strtoprint)
     opfile.close()
+    
+# complete_hin : final merged and secondary index
+# titles_hindi: titles for hindi data

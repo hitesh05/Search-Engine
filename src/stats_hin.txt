@@ -1,0 +1,2 @@
+Total Tokens: 20922279
+Tokens in inverted index: 5366651
