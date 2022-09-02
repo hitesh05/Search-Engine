@@ -123,3 +123,6 @@ In this file, for each query, you will have the results printed on 10 lines, eac
 - Difficult to process large data of 90 GB
 - Can not store word & its posting list directly into a main memory, So Used K-way Merge sort
 - Can not Load full final index into main memory, So Build Secondary Index on top of Primary Index (Posting List)
+
+### Bonus
+- Also created index for cross-language dump, with support provided for Hindi queries (same format as that for English).
